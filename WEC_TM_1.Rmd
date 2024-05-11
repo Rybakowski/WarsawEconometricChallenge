@@ -17,6 +17,7 @@ library(sf) # simple features -> do map
 library(dlookr) # do przyjemnej EDA
 library(ggplot2)
 library(ggthemes)
+library(stringr) # do operacji na tekście
 ```
 
 Reading the data
@@ -26,8 +27,23 @@ municipalities <- read.csv("data_municipalities.csv")
 View(municipalities)
 str(municipalities)
 
-counties <- read.csv("data_counties.csv")
+# Remove whitespaces from text variables and convert them to numeric
+for (i in 1:ncol(municipalities)){
+  municipalities[,i] <- str_remove_all(string = municipalities[,i], 
+                                       pattern = "\\s")
+}
 
+for ( i in 4:ncol(municipalities)){
+  municipalities[,i] <- as.numeric(municipalities[,i])
+}
+
+write.csv(municipalities, file = "municipalities_enhanced.csv")
+```
+
+
+Other data reading
+```{r}
+counties <- read.csv("data_counties.csv")
 
 gminy <- read_sf("shapefiles_wec/map_municipalities.shp")
 colnames(gminy)[1] <- colnames(municipalities)[1]
