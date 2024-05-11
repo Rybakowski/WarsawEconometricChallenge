@@ -17,13 +17,15 @@ colnames(data_master_raw)
 data_master <- data_master_raw %>% 
 	select(c(colnames(data_master_kol), "unemployment_50", "unemployment_25")) %>%  
 	mutate(home_appliances = (installations_toilet + installations_bathroom	+
-									  	installations_central_heating + 	installations_network_gas)/4) %>% 
+									  	installations_central_heating + 	installations_network_gas + installations_watersupply)) %>% 
 	mutate(rolny_revenue_ratio = (podatek_rolny/exp(population_total_log))/revenues_per_capita) %>% 
 	mutate(unemployment_25 = unemployment_25/exp(population_total_log)) %>% 
 	mutate(unemployment_50 = unemployment_50/exp(population_total_log)) %>% 
 	select(-c(installations_toilet,installations_bathroom,
-				 installations_central_heating,installations_network_gas)) %>% 
-	select(-c("unemployed_up_to_25", "unemployed_over_50" ,"unemployed_long_term" ))
+				 installations_central_heating,installations_network_gas, installations_watersupply)) %>% 
+	select(-c("unemployed_up_to_25", "unemployed_over_50" ,"unemployed_long_term" )) %>% 
+	select(-c(podatek_rolny, appartment_area_per_person, unemployment_rate,
+				 population_per_pharmacy, revenues_per_capita, net_scholarization))
 ```
 
 ```{r}

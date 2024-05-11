@@ -1,25 +1,59 @@
 # rr_spatial_model
 
-
-
 ```{r}
 
 library(sf)
 library(tidyverse)
-
+library(sp)
+library(spdep)
 ```
 
 ## Mapa
 ```{r}
 setwd(r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\_data\shapefile)")
-map_municipalitties <- read_sf(".", "map_municipalities")
-
+map_municipalitties <- read_sf(".", "map_municipalities") %>% 
+	mutate(mncplty_c = as.numeric(mncplty_c))
+map_municipalitties<- st_transform(map_municipalitties, "+proj=longlat")
 colnames(map_municipalitties)
 
 ```
 ## Database
 
 ```{r}
-data <- writexl::write_xlsx(r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\datamaster_final.xlsx)")
+data <- readxl::read_xlsx(r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\datamaster_final.xlsx)")
 
 ```
+
+```{r}
+plot(map_municipalitties)
+```
+
+## Dane przestrzenne
+
+```{r}
+dane.przestrzenne <- data %>% 
+	inner_join(map_municipalitties, by = c("municipality_code" = "mncplty_c"))
+
+```
+
+## Macierz W
+```{r}
+# Sąsiedztwo
+cont1 <- poly2nb(dane.przestrzenne, queen = T)
+W_list <- nb2listw(cont1, style = "W")
+W_matrix <- listw2mat(W_list)
+N <- nrow(dane.przestrzenne)
+
+# Kryterium odległości
+centroids <- st_centroid(dane.przestrzenne$geometry)
+cont_distance <- dnearneigh(centroids, 0.1, 50, row.names = dane.przestrzenne$kod)
+
+```
+
+```{r}
+# W_list <- W_distance_list
+W_matrix <- listw2mat(W_list)
+
+colnames(dane.przestrzenne)
+
+
