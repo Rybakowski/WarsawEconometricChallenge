@@ -1,4 +1,6 @@
 # rr_spatial_model
+#
+
 
 ```{r}
 
@@ -39,7 +41,7 @@ dane.przestrzenne <- data %>%
 ## Macierz W
 ```{r}
 # Sąsiedztwo
-cont1 <- poly2nb(dane.przestrzenne, queen = T)
+cont1 <- poly2nb(dane.przestrzenne$geometry, queen = T)
 W_list <- nb2listw(cont1, style = "W")
 W_matrix <- listw2mat(W_list)
 N <- nrow(dane.przestrzenne)

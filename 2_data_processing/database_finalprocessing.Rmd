@@ -25,7 +25,7 @@ data_master <- data_master_raw %>%
 				 installations_central_heating,installations_network_gas, installations_watersupply)) %>% 
 	select(-c("unemployed_up_to_25", "unemployed_over_50" ,"unemployed_long_term" )) %>% 
 	select(-c(podatek_rolny, appartment_area_per_person, unemployment_rate,
-				 population_per_pharmacy, revenues_per_capita, net_scholarization))
+				 population_per_pharmacy, revenues_per_capita, net_scholarization, education_share_primary, glosy_PIS))
 ```
 
 ```{r}
@@ -45,12 +45,14 @@ data_master <- data_master %>%
 	mutate(appartments_per_1000_persons = as.numeric(appartments_per_1000_persons))
 	
 
-data_master %>% select(where(is.character))
+data_master %>% select(where(is.character)) %>% 
+	mutate()
+
 ```
 
 
 
 ```{r}
-writexl::write_xlsx(data_master,"C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/datamaster_final.xlsx")
+# writexl::write_xlsx(data_master,"C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/datamaster_final.xlsx")
 ```
 
