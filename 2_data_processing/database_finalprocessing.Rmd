@@ -38,9 +38,12 @@ colnames(data_master) %>%
 glue::glue_collapse("\n")
 ```
 ```{r}
-data_master <- data_master %>% 
-	mutate(appartments_per_1000_persons = as.numeric(appartments_per_1000_persons)) 
+data_master <- data_master %>%  
+	mutate(appartments_per_1000_persons = str_remove_all(appartments_per_1000_persons," ")) %>% 
+	mutate(appartments_per_1000_persons = as.numeric(appartments_per_1000_persons))
 	
+
+data_master %>% select(where(is.character))
 ```
 
 
