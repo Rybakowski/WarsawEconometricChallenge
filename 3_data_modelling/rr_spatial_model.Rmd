@@ -1,0 +1,25 @@
+# rr_spatial_model
+
+
+
+```{r}
+
+library(sf)
+library(tidyverse)
+
+```
+
+## Mapa
+```{r}
+setwd(r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\_data\shapefile)")
+map_municipalitties <- read_sf(".", "map_municipalities")
+
+colnames(map_municipalitties)
+
+```
+## Database
+
+```{r}
+data <- writexl::write_xlsx(r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\datamaster_final.xlsx)")
+
+```
