@@ -12,18 +12,23 @@ library(bdl)
 
 ```
 ```{r}
-search_subjects("Pracujący w gminach wg płci")
+search_subjects("bezrobocie")
 ```
 
 ```{r}
 pkb_id = 217124
-temp2  <- bdl::get_subjects("P2172")
-temp <- bdl::get_variables("P2172")
+temp2  <- bdl::get_subjects("G12")
+temp <- bdl::get_variables("P3733")
 # bdl::variable_info
 # sub_temp <- subject_info("K4")
 temp3 <- subject_info("G570")
-variable_info(154173)
-print(temp3)
+variable_info(10514)
+temp %>% filter(str_detect(n2, "50|25")) %>%
+	select(id) #%>% 
+	unlist() %>% 
+	glue::glue_collapse("\n")
+			 
+print(temp2 %>% filter(levels == 6))
 ```
 
 ```{r}
@@ -67,7 +72,7 @@ writexl::write_xlsx(data_bdl_info, "bdl_variables_dict.xlsx")
 ```
 ```{r}
 data_bdl_raw <- data_bdl_info %>% 
-	filter(id %in% c(18,13)) %>% 
+	filter(id %in% c(18,13, 20:23)) %>% 
 	rename(year = years) %>% 
 	mutate(year = 2020) %>% 
 	select(id, varId, year) %>% 
@@ -111,7 +116,14 @@ data_bdl_final <- data_bdl_proc %>%
 	tidyr::extract(id, c("id","kod_1", "kod_2"), "(^\\d{2}(\\d{2})\\d{3}(\\d{4}).+)") %>%
 	unite(c(kod_1, kod_2), col = "kod", sep = "") %>% 
 	rename(podatek_rolny = bdl_76067, 
-			 avg_gosp_wiejskie = bdl_1633207)
+			 avg_gosp_wiejskie = bdl_1633207,
+			  gru_50 = bdl_563222,
+			  cze_25 = bdl_563223,
+			  cze_50 = bdl_563228,
+			  gru_25 = bdl_563229) %>% 
+	mutate(unemployment_50 = (gru_50 + cze_50)/2) %>% 
+	mutate(unemployment_25 = (gru_25 + cze_25)/2) %>% 
+	select(-matches("gru|cze"))
 
 
 
@@ -122,7 +134,7 @@ data_bdl_final <- data_bdl_proc %>%
 # 	select(id, name, year, bdl_458271) %>% 
 # 	drop_na() 
 
-# writexl::write_xlsx(data_bdl_final, "data_bdl_wec.xlsx")
+writexl::write_xlsx(data_bdl_final, "data_bdl_wec.xlsx")
 
 # save(data_bdl_proc,file =  "data_bdl.Rdata")
 

@@ -1,0 +1,40 @@
+## Final database
+
+```{r}
+library(tidyverse)
+library(readxl)
+
+setwd("C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/2_data_processing")
+datamaster_kol_path <- "data_master_kolorowy.xlsx"
+datamaster_path <- r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\2_data_processing\data_master.xlsx)"
+
+data_master_raw <- readxl::read_xlsx(datamaster_path)
+data_master_kol <- readxl::read_xlsx(datamaster_kol_path )
+
+colnames(data_master_raw)
+```
+```{r}
+data_master <- data_master_raw %>% 
+	select(c(colnames(data_master_kol), "unemployment_50", "unemployment_25")) %>%  
+	mutate(home_appliances = (installations_toilet + installations_bathroom	+
+									  	installations_central_heating + 	installations_network_gas)/4) %>% 
+	mutate(rolny_revenue_ratio = (podatek_rolny/exp(population_total_log))/revenues_per_capita) %>% 
+	mutate(unemployment_25 = unemployment_25/exp(population_total_log)) %>% 
+	mutate(unemployment_50 = unemployment_50/exp(population_total_log))
+```
+
+```{r}
+colnames(data_master)
+```
+
+
+```{r}
+
+new_dict <- tibble(variable_name = colnames(data_master))
+colnames(data_master) %>%
+glue::glue_collapse("\n")
+```
+```{r}
+writexl::write_xlsx(data_master,"C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/datamaster_final.xlsx")
+```
+

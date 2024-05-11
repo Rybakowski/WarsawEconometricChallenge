@@ -271,7 +271,7 @@ dict_final <- tibble(colnames = colnames(data_gminy))
 ```{r}
 list_data <- list(municipalities = data_gminy)
 
-writexl::write_xlsx(list_data, "C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/data_master.xlsx")
+writexl::write_xlsx(list_data, "data_master.xlsx")
 
 
 ```
