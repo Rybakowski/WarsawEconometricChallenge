@@ -209,7 +209,7 @@ counties_exposure <- counties_exposure_raw %>%
 	select(county_code, EXP, high_exposure)
 
 muni_exposure <- muni_exposure_raw %>% 
-	select(county_code, municipality_code, high_exposure)
+	select(municipality_code, high_exposure)
 
 
 ```
@@ -217,6 +217,15 @@ muni_exposure <- muni_exposure_raw %>%
 
 
 ## Final
+
+```{r}
+
+mapping <- data_municipalities %>% 
+	distinct(municipality_code, county_code)
+data_powiaty <- data_counties %>% 
+	
+```
+
 
 ```{r}
 data_gminy <- data_municipalities %>% 
