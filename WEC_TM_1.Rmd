@@ -33,9 +33,10 @@ for (i in 1:ncol(municipalities)){
                                        pattern = "\\s")
 }
 
-for ( i in 4:ncol(municipalities)){
+for ( i in 3:ncol(municipalities)){
   municipalities[,i] <- as.numeric(municipalities[,i])
 }
+municipalities[,1] <- as.numeric(municipalities[,1])
 ```
 
 
@@ -117,5 +118,14 @@ for (i in 1:nrow(municipalities)){
 
 write.csv(municipalities, file = "municipalities_enhanced_2.csv")
 
+```
+
+Jakiś model
+```{r}
+mun3 <- municipalities %>% select(-municipality_code) %>%
+  select(-municipality_name) %>%
+  select(-county_code)
+model2 <- lm(formula = percent_vaccinated~., data = mun3)
+summary(model2)
 ```
 
