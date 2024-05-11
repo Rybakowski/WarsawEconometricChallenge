@@ -1,0 +1,63 @@
+---
+title: "First codes + map"
+author: "Tymoteusz Mętrak"
+date: "2024-05-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Libraries
+```{r}
+library(tidyr)
+library(tidyverse)
+library(sf) # simple features -> do map
+library(dlookr) # do przyjemnej EDA
+library(ggplot2)
+library(ggthemes)
+```
+
+Reading the data
+```{r}
+getwd()
+municipalities <- read.csv("data_municipalities.csv")
+View(municipalities)
+str(municipalities)
+
+counties <- read.csv("data_counties.csv")
+
+
+gminy <- read_sf("shapefiles_wec/map_municipalities.shp")
+colnames(gminy)[1] <- colnames(municipalities)[1]
+colnames(municipalities)[1]
+gminy$municipality_code <- as.numeric(gminy$municipality_code)
+
+gminy <-  left_join(gminy, municipalities, by = join_by(municipality_code))
+
+zabory <- read_sf("shapefiles_wec/map_partitions.shp")
+```
+
+
+Adjusting projections
+```{r}
+gminy <- st_transform(gminy, 4326)
+zabory <- st_transform(zabory, 4326)
+```
+
+
+The map
+```{r}
+ggplot(gminy) +
+  geom_sf(aes(fill=percent_vaccinated,col=percent_vaccinated)) +
+  geom_sf(data = zabory, fill = NA, col = "red")+
+  scale_fill_viridis_c()+
+  guides(fill=guide_legend(title = "Vaccination \nrate"),
+         color="none")+
+  labs(title = "Vaccination rate in Poland",
+       x="\n",
+       y="\n")+
+  theme_gdocs()
+```
+
