@@ -9,7 +9,7 @@
 list.files("C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/_data")
 data_counties_path = r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\_data\data_counties.csv)"
 data_municipalities_path = r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\_data\data_municipalities.csv)"
-
+data_municipalities_enhanced_path= r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\1_raw_data\municipalities_enhanced.csv)"
 ```
 ## Libraries
 ```{r}
@@ -25,7 +25,7 @@ library(naniar)
 ```{r}
 
 data_counties <- read.csv(data_counties_path)
-data_municipalities <- read.csv(data_municipalities_path)
+data_municipalities <- read.csv(data_municipalities_enhanced_path)
 
 ```
 ## Check NA
@@ -74,9 +74,88 @@ wybory_df <- wybory_raw
 colnames(wybory_df) <- colnames_wybory
 wybory_df
 ```
+
+
+## Agregacja population
+
 ```{r}
 
+colnames(data_gminy,)
+data_population <- data_gminy %>% 
+	select(teryt_gmina, matches("population")) %>% 
+	pivot_longer(-teryt_gmina) %>% 
+	mutate(name = str_remove_all(name, "population_|total_")) %>% 
+	filter(!str_detect(name, "density|per_pharmacy")) %>% 
+	tidyr::extract(col = name, regex = "(\\d{1,2})_(\\d{1,2})", into = c("lower","upper"), remove = FALSE) %>% 
+	mutate(name = str_remove_all(name, "\\d|_")) %>% 
+	mutate(population_base = ifelse(name == "total" & is.na(lower), value, NA)) %>% 
+	group_by(teryt_gmina) %>% 
+	fill(population_base, .direction = "downup") %>% 
+	drop_na() %>% 
+	mutate(name = ifelse(name == "total", "t", name))
+
+data_population_new <- data_population %>% 
+	mutate(value = value/population_base) %>% 
+	# group_by(name, teryt_gmina) %>% 
+	# summarize(sum(value))
+	unite(c(name, lower, upper), col = "name") %>% 
+	mutate(name = paste0("pop_",name,"_perc")) %>% 
+	select(-population_base) %>% 
+	pivot_wider()
+
+data_population_new
+```
+
+```{r}
+
+data_population_newgroups <- data_population %>% 
+	mutate(new_lower = case_when(
+		lower < 20 ~ 0,
+		lower < 30 ~ 20,
+		lower < 40 ~ 30,
+		lower < 50 ~ 40,
+		lower < 60 ~ 50,
+		.default = 60
+	)) %>% 
+	mutate(new_upper = case_when(
+		lower < 20 ~ 19,
+		lower < 30 ~ 29,
+		lower < 40 ~ 39,
+		lower < 50 ~ 49,
+		lower < 60 ~ 59,
+		.default = 84
+	)) %>% 
+	unite(c(name, new_lower, new_upper), col = "name") %>% 
+	ungroup() %>% 
+	group_by(name, teryt_gmina) %>% 
+	mutate(value = sum(value)) %>% 
+	mutate(value = value/population_base) %>% 
+	select(-c(population_base, lower, upper)) %>% 
+	distinct() %>%
+	mutate(name = paste0("pop_",name,"_perc")) %>%
+	pivot_wider()
+	
+
+```
+```{r}
 data_gminy <- data_municipalities %>% 
-	mutate(teryt_powiat = str_remove(municipality_code, "\\d^"))
+	mutate(teryt_gmina = str_remove(municipality_code, "(.{1})$")) %>%
+	mutate(teryt_gmina = as.integer(teryt_gmina)) %>% 
+	inner_join(wybory_df, by = c("teryt_gmina" = "kod_teryt")) %>% 
+	inner_join(data_population_new, by = "teryt_gmina") %>% 
+	inner_join(data_population_newgroups, by = "teryt_gmina") 
+	
+
+data_gminy %>% colnames()
+```
+
+```{r}
+list_data <- list(municipalities = data_gminy,
+				 counties = data_counties)
+
+writexl::write_xlsx(list_data, "data_master.xlsx")
+
+
+
 ```
 
