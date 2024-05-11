@@ -49,7 +49,7 @@ data_master <- data_master_raw %>%
 					values_from = ones,
 					names_glue = "type_{type}") %>% 
 	select(-c(last_n, population_total, type_1, glosy_PIS, pop_t_30_39_perc, type_20_50k, 
-				 persons_running_business, education_share_primary)) %>% 
+				 persons_running_business, education_share_primary, installations_bathroom)) %>% 
 	replace_na(replace = list(type_agr = 0,
 									  type_0_20k = 0,
 									  type_50_100k = 0,
