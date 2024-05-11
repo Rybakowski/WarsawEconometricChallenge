@@ -7,7 +7,7 @@
 list.files("C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/_data")
 data_counties_path = r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\_data\data_counties.csv)"
 data_municipalities_path = r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\_data\data_municipalities.csv)"
-data_municipalities_enhanced_path= r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\1_raw_data\municipalities_enhanced.csv)"
+data_municipalities_enhanced_path= r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\1_raw_data\municipalities_enhanced_2.csv)"
 ```
 ## Libraries
 ```{r}
@@ -177,9 +177,9 @@ data_gminy %>%
 list_data <- list(municipalities = data_gminy,
 				 counties = data_counties)
 
-writexl::write_xlsx(list_data, "data_master.xlsx")
+writexl::write_xlsx(list_data, "C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/data_master.xlsx")
 
 
-
+getwd()
 ```
 
