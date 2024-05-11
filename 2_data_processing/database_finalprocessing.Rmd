@@ -38,6 +38,14 @@ colnames(data_master) %>%
 glue::glue_collapse("\n")
 ```
 ```{r}
+data_master <- data_master %>% 
+	mutate(appartments_per_1000_persons = as.numeric(appartments_per_1000_persons)) 
+	
+```
+
+
+
+```{r}
 writexl::write_xlsx(data_master,"C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/datamaster_final.xlsx")
 ```
 
