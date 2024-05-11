@@ -1,0 +1,82 @@
+
+
+### Data processing
+
+
+```{r }
+# setwd("C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge")
+
+list.files("C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/_data")
+data_counties_path = r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\_data\data_counties.csv)"
+data_municipalities_path = r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\_data\data_municipalities.csv)"
+
+```
+## Libraries
+```{r}
+library(tidyverse)
+library(sf) # simple features -> do map
+library(dlookr) # do przyjemnej EDA
+library(ggthemes)
+library(naniar)
+
+```
+
+## Download data
+```{r}
+
+data_counties <- read.csv(data_counties_path)
+data_municipalities <- read.csv(data_municipalities_path)
+
+```
+## Check NA
+
+```{r}
+
+data_counties %>% 
+	keep(.p = is.numeric) %>% 
+	select(-county_code) %>% 
+	imap(.f = ~ggplot(data.frame(x = .x)) +
+			 	geom_histogram(aes(x = x)) +
+			 	labs(x = .y))
+
+
+```
+```{r}
+
+colnames(data_municipalities)
+data_municipalities %>%
+	keep(.p = is.numeric) %>%
+	select(-contains("population"), -municipality_code, -county_code) %>%
+	imap(.f = ~ggplot(data.frame(x = .x)) +
+			 	geom_histogram(aes(x = x)) +
+			 	labs(x = .y))
+```
+## Wybory
+```{r}
+wybory_path <- r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\1_raw_data\wyniki_gl_na_listy_po_gminach_proc_sejm.csv)"
+dict_path <- r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\dict_master.xlsx)"
+
+dict <- readxl::read_xlsx(dict_path)
+wybory_raw <- read.csv2(wybory_path)
+
+colnames(wybory_raw) %>% 
+	glue::glue_collapse("\n")
+```
+```{r}
+
+colnames_wybory <- tibble(colnames = colnames(wybory_raw)) %>% 
+	left_join(dict, by = c("colnames" = "variable_name")) %>% 
+	select(new_label) %>% 
+	unlist() %>% 
+	unname()
+
+wybory_df <- wybory_raw
+colnames(wybory_df) <- colnames_wybory
+wybory_df
+```
+```{r}
+
+data_gminy <- data_municipalities %>% 
+	mutate(teryt_powiat = str_remove(municipality_code, "\\d^"))
+```
+
