@@ -50,7 +50,8 @@ data_bdl_info <- to_download %>%
 	mutate(subject_info = map(subjectId, safely(subject_info))) %>% 
 	mutate(unit_name = map(variable_info, ~.x[["measureUnitName"]])) %>% 
 	mutate(subject_name = map(subject_info, ~.x$result[['name']])) %>% 
-	select(id, varId, subject_name, variable_name, variable_name_2,unit_name, years) %>% 
+	mutate(level = map(variable_info, ~.x["level"])) %>% 
+	select(id, varId, subject_name, variable_name, variable_name_2,unit_name, level, years) %>% 
 	mutate(subject_name = map(subject_name,.f = ~ifelse(is_null(.x),NA, .x))) %>% 
 	mutate(variable_name = map(variable_name,.f = ~ifelse(is_null(.x),NA, .x))) %>% 
 	mutate(variable_name_2 = map(variable_name_2,.f = ~ifelse(is_null(.x),NA, .x))) %>%
@@ -66,11 +67,12 @@ writexl::write_xlsx(data_bdl_info, "bdl_variables_dict.xlsx")
 ```
 ```{r}
 data_bdl_raw <- data_bdl_info %>% 
+	filter(id %in% c(18,13)) %>% 
 	rename(year = years) %>% 
-	mutate(year = 2011) %>% 
+	mutate(year = 2020) %>% 
 	select(id, varId, year) %>% 
 	# slice(1) %>% 
-	mutate(unitLevel = 5) %>%
+	mutate(unitLevel = 6) %>%
 	mutate(unitLevel = ifelse(varId == 458271, 3, unitLevel)) %>% 
 	mutate(unitLevel = ifelse(varId == 65592, 3, unitLevel)) %>% 
 	# filter(varId == 65592)  %>% 
@@ -105,16 +107,22 @@ data_bdl_final <- data_bdl_proc %>%
 	unnest(data) %>%
 	mutate(varId = paste0("bdl_", varId)) %>% 
 	pivot_wider(names_from = varId,
-					values_from = val) 
+					values_from = val) %>% 
+	tidyr::extract(id, c("id","kod_1", "kod_2"), "(^\\d{2}(\\d{2})\\d{3}(\\d{4}).+)") %>%
+	unite(c(kod_1, kod_2), col = "kod", sep = "") %>% 
+	rename(podatek_rolny = bdl_76067, 
+			 avg_gosp_wiejskie = bdl_1633207)
 
-data_bdl_n5 <- data_bdl_final %>% 
-	select(-bdl_458271) %>% 
-	drop_na()
-data_bdl_n3 <- data_bdl_final %>% 
-	select(id, name, year, bdl_458271) %>% 
-	drop_na() 
 
-writexl::write_xlsx(list(n5 = data_bdl_n5, n3 = data_bdl_n3), "data_bdl_20240413.xlsx")
+
+# data_bdl_n5 <- data_bdl_final %>% 
+# 	select(-bdl_458271) %>% 
+# 	drop_na()
+# data_bdl_n3 <- data_bdl_final %>% 
+# 	select(id, name, year, bdl_458271) %>% 
+# 	drop_na() 
+
+# writexl::write_xlsx(data_bdl_final, "data_bdl_wec.xlsx")
 
 # save(data_bdl_proc,file =  "data_bdl.Rdata")
 

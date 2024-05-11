@@ -1,4 +1,3 @@
-
 ### Data processing
 
 ```{r }
@@ -9,7 +8,9 @@ data_counties_path = r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge
 data_municipalities_path = r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\_data\data_municipalities.csv)"
 data_municipalities_enhanced_path= r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\1_raw_data\municipalities_enhanced_2.csv)"
 ```
+
 ## Libraries
+
 ```{r}
 library(tidyverse)
 library(sf) # simple features -> do map
@@ -20,35 +21,39 @@ library(naniar)
 ```
 
 ## Download data
+
 ```{r}
 
 data_counties <- read.csv(data_counties_path)
 data_municipalities <- read.csv(data_municipalities_enhanced_path)
 
 ```
+
 ## Check NA
 
 ```{r}
 
-data_counties %>% 
-	keep(.p = is.numeric) %>% 
-	select(-county_code) %>% 
-	imap(.f = ~ggplot(data.frame(x = .x)) +
-			 	geom_histogram(aes(x = x)) +
-			 	labs(x = .y))
-c
+# data_counties %>% 
+# 	keep(.p = is.numeric) %>% 
+# 	select(-county_code) %>% 
+# 	imap(.f = ~ggplot(data.frame(x = .x)) +
+# 			 	geom_histogram(aes(x = x)) +
+# 			 	labs(x = .y))
+
 
 ```
+
 ```{r}
 
 
-data_municipalities %>%
-	keep(.p = is.numeric) %>%
-	select(-contains("population"), -municipality_code, -county_code) %>%
-	imap(.f = ~ggplot(data.frame(x = .x)) +
-			 	geom_histogram(aes(x = x)) +
-			 	labs(x = .y))
+# data_municipalities %>%
+# 	keep(.p = is.numeric) %>%
+# 	select(-contains("population"), -municipality_code, -county_code) %>%
+# 	imap(.f = ~ggplot(data.frame(x = .x)) +
+# 			 	geom_histogram(aes(x = x)) +
+# 			 	labs(x = .y))
 ```
+
 ```{r}
 data_municipalities %>% 
 	select(where(~any(is.na(.x)))) %>% 
@@ -62,8 +67,8 @@ data_counties %>%
 	map(.f = ~sum(is.na(.x)))
 ```
 
-
 ## Wybory
+
 ```{r}
 wybory_path <- r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\1_raw_data\wyniki_gl_na_listy_po_gminach_proc_sejm.csv)"
 dict_path <- r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\dict_master.xlsx)"
@@ -74,6 +79,7 @@ wybory_raw <- read.csv2(wybory_path)
 colnames(wybory_raw) %>% 
 	glue::glue_collapse("\n")
 ```
+
 ```{r}
 
 colnames_wybory <- tibble(colnames = colnames(wybory_raw)) %>% 
@@ -82,11 +88,16 @@ colnames_wybory <- tibble(colnames = colnames(wybory_raw)) %>%
 	unlist() %>% 
 	unname()
 
-wybory_df <- wybory_raw
+
+wybory_df <- wybory_raw 
+
+	
 colnames(wybory_df) <- colnames_wybory
+
+
+	
 wybory_df
 ```
-
 
 ## Agregacja population
 
@@ -115,7 +126,16 @@ data_population_new <- data_population %>%
 	select(-population_base) %>% 
 	pivot_wider()
 
-data_population_new
+data_population_sex <- data_population %>% 
+	ungroup() %>% 
+	group_by(teryt_gmina, name) %>% 
+	mutate(value = sum(value)) %>% 
+	mutate(value = value/population_base) %>%
+	select(-c(lower, upper, population_base)) %>% 
+	distinct() %>% 
+	mutate(name = paste0("pop_",name,"_all_perc")) %>% 
+	pivot_wider() %>% 
+	select(-pop_t_all_perc)
 ```
 
 ```{r}
@@ -149,13 +169,54 @@ data_population_newgroups <- data_population %>%
 	
 
 ```
-```{r}
 
+```{r}
 data_municipalities %>% 
 	select(where(~any(is.na(.x)))) %>% 
 	map(.f = ~sum(is.na(.x)))
 
 ```
+
+## BDL new data
+
+```{r}
+
+bdl_new_path <- r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\2_data_processing\bdl\data_bdl_wec.xlsx)"
+
+bdl_new_raw <- readxl::read_xlsx(bdl_new_path)
+```
+```{r}
+bdl_new <- bdl_new_raw %>% 
+	filter(!str_detect(name, "obszar wiejski| - miasto") ) %>%
+	filter(podatek_rolny != 0 | name == "Hel" | name == "Jastarnia") %>% 
+	mutate(kod = as.integer(kod))
+```
+## 
+Data Wojtek 
+
+```{r}
+
+counties_exposure_path <- r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\1_raw_data\data_counties_exposure.csv)"
+index_ineq_path  <- r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\1_raw_data\data_index_ineq.csv)"
+muni_exposure_path <- r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\1_raw_data\data_muni_exposure.csv)"
+
+index_ineq_raw <- read.csv(index_ineq_path) %>% 
+	select(-X)
+counties_exposure_raw <- read.csv(counties_exposure_path) 
+muni_exposure_raw <- read.csv(muni_exposure_path)
+
+counties_exposure <- counties_exposure_raw %>% 
+	select(county_code, EXP, high_exposure)
+
+muni_exposure <- muni_exposure_raw %>% 
+	select(county_code, municipality_code, high_exposure)
+
+
+```
+
+
+
+## Final
 
 ```{r}
 data_gminy <- data_municipalities %>% 
@@ -164,9 +225,14 @@ data_gminy <- data_municipalities %>%
 	inner_join(wybory_df, by = c("teryt_gmina" = "kod_teryt")) %>% 
 	inner_join(data_population_new, by = "teryt_gmina") %>% 
 	inner_join(data_population_newgroups, by = "teryt_gmina") %>% 
+	inner_join(data_population_sex, by = "teryt_gmina") %>% 
+	inner_join(bdl_new, by = c("teryt_gmina" = "kod")) %>% 
+	inner_join(muni_exposure, by = "municipality_code") %>% 
+	# inner_join(index_ineq_raw, by = "municipality_code")
 	mutate(across(
 		.cols = c(healthcare_advices,forests_area,children_3_5_in_kindergartens),
-		.fns = ~ifelse(is.na(.x), mean(.x, na.rm = TRUE), .x)))
+		.fns = ~ifelse(is.na(.x), mean(.x, na.rm = TRUE), .x))) %>% 
+	select(!where(~any(is.na(.x)))) # wywalamy na
 
 data_gminy %>%
 	select(where(~any(is.na(.x)))) %>% 
@@ -180,6 +246,4 @@ list_data <- list(municipalities = data_gminy,
 writexl::write_xlsx(list_data, "C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/data_master.xlsx")
 
 
-getwd()
 ```
-
