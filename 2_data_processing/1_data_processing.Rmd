@@ -1,7 +1,5 @@
 
-
 ### Data processing
-
 
 ```{r }
 # setwd("C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge")
@@ -38,12 +36,12 @@ data_counties %>%
 	imap(.f = ~ggplot(data.frame(x = .x)) +
 			 	geom_histogram(aes(x = x)) +
 			 	labs(x = .y))
-
+c
 
 ```
 ```{r}
 
-colnames(data_municipalities)
+
 data_municipalities %>%
 	keep(.p = is.numeric) %>%
 	select(-contains("population"), -municipality_code, -county_code) %>%
@@ -51,6 +49,20 @@ data_municipalities %>%
 			 	geom_histogram(aes(x = x)) +
 			 	labs(x = .y))
 ```
+```{r}
+data_municipalities %>% 
+	select(where(~any(is.na(.x)))) %>% 
+	map(.f = ~sum(is.na(.x)))
+
+```
+
+```{r}
+data_counties %>% 
+	select(where(~any(is.na(.x)))) %>% 
+	map(.f = ~sum(is.na(.x)))
+```
+
+
 ## Wybory
 ```{r}
 wybory_path <- r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\1_raw_data\wyniki_gl_na_listy_po_gminach_proc_sejm.csv)"
@@ -80,7 +92,7 @@ wybory_df
 
 ```{r}
 
-colnames(data_gminy,)
+# colnames(data_gminy)
 data_population <- data_gminy %>% 
 	select(teryt_gmina, matches("population")) %>% 
 	pivot_longer(-teryt_gmina) %>% 
@@ -138,15 +150,27 @@ data_population_newgroups <- data_population %>%
 
 ```
 ```{r}
+
+data_municipalities %>% 
+	select(where(~any(is.na(.x)))) %>% 
+	map(.f = ~sum(is.na(.x)))
+
+```
+
+```{r}
 data_gminy <- data_municipalities %>% 
 	mutate(teryt_gmina = str_remove(municipality_code, "(.{1})$")) %>%
 	mutate(teryt_gmina = as.integer(teryt_gmina)) %>% 
 	inner_join(wybory_df, by = c("teryt_gmina" = "kod_teryt")) %>% 
 	inner_join(data_population_new, by = "teryt_gmina") %>% 
-	inner_join(data_population_newgroups, by = "teryt_gmina") 
-	
+	inner_join(data_population_newgroups, by = "teryt_gmina") %>% 
+	mutate(across(
+		.cols = c(healthcare_advices,forests_area,children_3_5_in_kindergartens),
+		.fns = ~ifelse(is.na(.x), mean(.x, na.rm = TRUE), .x)))
 
-data_gminy %>% colnames()
+data_gminy %>%
+	select(where(~any(is.na(.x)))) %>% 
+	map(.f = ~sum(is.na(.x)))
 ```
 
 ```{r}

@@ -1,0 +1,140 @@
+
+
+```{r}
+setwd("C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/2_data_processing/bdl")
+# path_map = r"(C:\Users\rados\OneDrive - SGH\Semestr 7\ekonometria przestrzenna\data)"
+# setwd(path_wd)
+library(tidyverse)
+library(readxl)
+library(sp)
+library(sf)
+library(bdl)
+
+```
+```{r}
+search_subjects("Pracujący w gminach wg płci")
+```
+
+```{r}
+pkb_id = 217124
+temp2  <- bdl::get_subjects("P2172")
+temp <- bdl::get_variables("P2172")
+# bdl::variable_info
+# sub_temp <- subject_info("K4")
+temp3 <- subject_info("G570")
+variable_info(154173)
+print(temp3)
+```
+
+```{r}
+to_download <- read_xlsx("bdl_dict.xlsx") %>% 
+	mutate_all(as.character) %>% 
+	rename(varId = var_Id) %>% 
+	mutate(unitLevel = 6) %>% 
+	mutate(id = as.numeric(id)) %>% 
+	rbind(data_frame(
+		id = 0,
+		varId = 458271,
+		unitLevel = 3
+	)) %>% 
+	mutate(id = ifelse(varId == 458271, max(id + 1), id))
+	
+
+data_bdl_info <- to_download %>% 
+	mutate(variable_info = map(varId, variable_info)) %>% 
+	# unnest_wider(variable_info, names_sep = "_var_") 
+	mutate(subjectId = map(variable_info, ~.x[["subjectId"]])) %>% 
+	mutate(variable_name = map(variable_info, ~.x[['n1']])) %>% 
+	mutate(variable_name_2 = map(variable_info, ~.x[['n2']])) %>% 
+	mutate(years = map(variable_info, ~.x[["years"]])) %>% 
+	mutate(subject_info = map(subjectId, safely(subject_info))) %>% 
+	mutate(unit_name = map(variable_info, ~.x[["measureUnitName"]])) %>% 
+	mutate(subject_name = map(subject_info, ~.x$result[['name']])) %>% 
+	select(id, varId, subject_name, variable_name, variable_name_2,unit_name, years) %>% 
+	mutate(subject_name = map(subject_name,.f = ~ifelse(is_null(.x),NA, .x))) %>% 
+	mutate(variable_name = map(variable_name,.f = ~ifelse(is_null(.x),NA, .x))) %>% 
+	mutate(variable_name_2 = map(variable_name_2,.f = ~ifelse(is_null(.x),NA, .x))) %>%
+	mutate(unit_name = map(unit_name,.f = ~ifelse(is_null(.x),NA, .x))) %>% 
+	mutate(across(-years, .fns = ~unlist(.x)))
+
+
+data_bdl_info
+```
+```{r}
+writexl::write_xlsx(data_bdl_info, "bdl_variables_dict.xlsx")
+?safely
+```
+```{r}
+data_bdl_raw <- data_bdl_info %>% 
+	rename(year = years) %>% 
+	mutate(year = 2011) %>% 
+	select(id, varId, year) %>% 
+	# slice(1) %>% 
+	mutate(unitLevel = 5) %>%
+	mutate(unitLevel = ifelse(varId == 458271, 3, unitLevel)) %>% 
+	mutate(unitLevel = ifelse(varId == 65592, 3, unitLevel)) %>% 
+	# filter(varId == 65592)  %>% 
+	mutate(data = pmap(.l = pick(-id), .f = safely(get_data_by_variable, quiet = FALSE)))
+
+
+```
+
+
+```{r}
+
+data_bdl_proc <- data_bdl_raw %>% 
+	mutate(error = map(data, .f = ~.x[["error"]] %>% is.null() %>% unlist())) %>% 
+	filter(error == TRUE) %>% 
+	select(-error) %>% 
+	mutate(variable_info = map(varId, variable_info)) %>% 
+	mutate(subjectId = map(variable_info, ~.x[["subjectId"]])) %>% 
+	mutate(variable_name = map(variable_info, ~.x[['n1']])) %>% 
+	mutate(variable_name_2 = map(variable_info, ~.x[['n2']])) %>% 
+	mutate(subject_info = map(subjectId, safely(subject_info))) %>% 
+	mutate(subject_name = map(subject_info, ~.x$result[['name']])) %>% 
+	select(id,data,varId, subject_name, variable_name, variable_name_2, year) 
+
+```
+
+
+```{r}
+
+data_bdl_final <- data_bdl_proc %>% 
+	select(data, varId) %>% 
+	mutate(data = map(data, .f =~.x$result %>% select(id:val))) %>% 
+	unnest(data) %>%
+	mutate(varId = paste0("bdl_", varId)) %>% 
+	pivot_wider(names_from = varId,
+					values_from = val) 
+
+data_bdl_n5 <- data_bdl_final %>% 
+	select(-bdl_458271) %>% 
+	drop_na()
+data_bdl_n3 <- data_bdl_final %>% 
+	select(id, name, year, bdl_458271) %>% 
+	drop_na() 
+
+writexl::write_xlsx(list(n5 = data_bdl_n5, n3 = data_bdl_n3), "data_bdl_20240413.xlsx")
+
+# save(data_bdl_proc,file =  "data_bdl.Rdata")
+
+# data_distance <- data_60559 %>% 
+# 	select(id,year,name, val) %>%
+# 	rename(val_60559 = val) %>% 
+# 	left_join(data_1633207  %>% select(id,name, val),
+# 				 by = join_by(id, name)) %>% 
+# 	rename(val_1633207 = val) %>% 
+# 	left_join(data_64429  %>% select(id,year,name, val)) %>% 
+# 	rename(val_64429 = val) %>% 
+# 	mutate(across(contains("val"),
+# 					  .fns = ~base::scale(.x)[,1])) %>% 
+# 	select(!year) %>% 
+# 	mutate(join = 1)
+
+# data_distance %>% select(contains("val")) %>% cor(method = "spearman")
+
+# data_comparison <- dane_nuts4_2019 %>% 
+# 	select(id, kod, nazwa_teryt, students_count, number_schools, mean_ewd_mat) %>% 
+# 	left_join(data_455392 %>% select(id, val))
+```
+
