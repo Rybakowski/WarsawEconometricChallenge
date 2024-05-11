@@ -15,17 +15,43 @@ colnames(data_master_raw)
 ```
 ```{r}
 data_master <- data_master_raw %>% 
-	select(c(colnames(data_master_kol), "unemployment_50", "unemployment_25")) %>%  
-	mutate(home_appliances = (installations_toilet + installations_bathroom	+
-									  	installations_central_heating + 	installations_network_gas + installations_watersupply)) %>% 
+	select(c(colnames(data_master_kol), "unemployment_50", "unemployment_25", area_km2, population_total, population_total_log)) %>%  
+	# mutate(home_appliances =  (installations_toilet +
+	# 								  	installations_bathroom	+
+	# 								  	installations_central_heating +
+	# 								  	installations_network_gas +
+	# 								  	installations_watersupply)) %>%
 	mutate(rolny_revenue_ratio = (podatek_rolny/exp(population_total_log))/revenues_per_capita) %>% 
 	mutate(unemployment_25 = unemployment_25/exp(population_total_log)) %>% 
 	mutate(unemployment_50 = unemployment_50/exp(population_total_log)) %>% 
-	select(-c(installations_toilet,installations_bathroom,
-				 installations_central_heating,installations_network_gas, installations_watersupply)) %>% 
-	select(-c("unemployed_up_to_25", "unemployed_over_50" ,"unemployed_long_term" )) %>% 
+	# select(-c(installations_toilet,installations_bathroom,
+	# 			 installations_central_heating,installations_network_gas, installations_watersupply)) %>% 
+	select(-c("unemployed_up_to_25", "unemployed_over_50" ,"unemployed_long_term")) %>% 
 	select(-c(podatek_rolny, appartment_area_per_person, unemployment_rate,
-				 population_per_pharmacy, revenues_per_capita, net_scholarization, education_share_primary, glosy_PIS))
+				 population_per_pharmacy, revenues_per_capita, net_scholarization, 
+				 appartments_per_1000_persons, population_density)) %>% 
+	mutate(last_n = str_extract(municipality_code, ".$")) %>% 
+	mutate(type_1 = case_when(
+		last_n == 1 ~ "urban",
+		last_n == 2 ~ "rural",
+		.default = "mixed"
+	)) %>% 
+	mutate(type = case_when(
+		type_1 == "rural" ~ "agr",
+		population_total < 20000 & type_1 != "rural" ~ "0_20k",
+		population_total < 50000 ~ "20_50k",
+		population_total < 100000 ~ "50_100k",
+		population_total < 500000 ~ "100_500k",
+		.default = "500k+"
+	)) %>% 
+	mutate(ones =  1)  %>% 
+	pivot_wider(names_from = type,
+					values_from = ones,
+					names_glue = "type_{type}") %>% 
+	select(-c(last_n, population_total, type_1, glosy_PIS, pop_t_30_39_perc))
+
+
+
 ```
 
 ```{r}
@@ -40,19 +66,26 @@ colnames(data_master) %>%
 glue::glue_collapse("\n")
 ```
 ```{r}
-data_master <- data_master %>%  
-	mutate(appartments_per_1000_persons = str_remove_all(appartments_per_1000_persons," ")) %>% 
-	mutate(appartments_per_1000_persons = as.numeric(appartments_per_1000_persons))
-	
+# data_master <- data_master %>%  
+# 	mutate(appartments_per_1000_persons = str_remove_all(appartments_per_1000_persons," ")) %>% 
+# 	mutate(appartments_per_1000_persons = as.numeric(appartments_per_1000_persons))
+# 	
+# 
+# data_master %>% select(where(is.character)) %>% 
+# 	mutate(munica)
+# 
+# 
+# data_master <- data_master %>% 
+# 	select(municipality_code) %>% 
+# 	mutate(last_n = substr(municipality_code[:7])
 
-data_master %>% select(where(is.character)) %>% 
-	mutate()
+# data_master
 
 ```
-
-
-
 ```{r}
-# writexl::write_xlsx(data_master,"C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/datamaster_final.xlsx")
+writexl::write_xlsx(data_master,"C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/datamaster_final.xlsx")
 ```
+
+
+
 

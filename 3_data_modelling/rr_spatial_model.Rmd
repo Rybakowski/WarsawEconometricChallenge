@@ -1,6 +1,6 @@
 # rr_spatial_model
-#
 
+# 
 
 ```{r}
 
@@ -11,6 +11,7 @@ library(spdep)
 ```
 
 ## Mapa
+
 ```{r}
 setwd(r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\_data\shapefile)")
 map_municipalitties <- read_sf(".", "map_municipalities") %>% 
@@ -19,6 +20,7 @@ map_municipalitties<- st_transform(map_municipalitties, "+proj=longlat")
 colnames(map_municipalitties)
 
 ```
+
 ## Database
 
 ```{r}
@@ -39,6 +41,7 @@ dane.przestrzenne <- data %>%
 ```
 
 ## Macierz W
+
 ```{r}
 # Sąsiedztwo
 cont1 <- poly2nb(dane.przestrzenne$geometry, queen = T)
@@ -52,10 +55,6 @@ cont_distance <- dnearneigh(centroids, 0.1, 50, row.names = dane.przestrzenne$ko
 
 ```
 
-```{r}
-# W_list <- W_distance_list
-W_matrix <- listw2mat(W_list)
+\`\`\`{r} \# W_list \<- W_distance_list W_matrix \<- listw2mat(W_list)
 
 colnames(dane.przestrzenne)
-
-
