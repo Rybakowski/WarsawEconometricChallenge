@@ -33,11 +33,10 @@ for (i in 1:ncol(municipalities)){
                                        pattern = "\\s")
 }
 
-for ( i in 4:ncol(municipalities)){
+for ( i in 3:ncol(municipalities)){
   municipalities[,i] <- as.numeric(municipalities[,i])
 }
-
-write.csv(municipalities, file = "municipalities_enhanced.csv")
+municipalities[,1] <- as.numeric(municipalities[,1])
 ```
 
 
@@ -75,5 +74,58 @@ ggplot(gminy) +
        x="\n",
        y="\n")+
   theme_gdocs()
+```
+
+ZABORY
+```{r}
+#install.packages("secr")
+library(secr)
+
+crds <- st_centroid(gminy)
+cords <- st_coordinates(crds)
+
+Prussian <- zabory[zabory$partition=="prussian",] %>%
+  as_Spatial()
+Russian <- zabory[zabory$partition=="russian",] %>%
+  as_Spatial()
+Austrian <- zabory[zabory$partition=="austrian",] %>%
+  as_Spatial()
+
+municipalities$Prussian <- pointsInPolygon(cords, Prussian)
+municipalities$Russian <- pointsInPolygon(cords, Russian)
+municipalities$Austrian <- pointsInPolygon(cords, Austrian)
+
+for (i in 1:nrow(municipalities)){
+  if (municipalities[i,"Prussian"]==TRUE){
+    municipalities[i,"Prussian"] <- 1
+  }
+  else if (municipalities[i,"Prussian"]==FALSE){
+    municipalities[i,"Prussian"] <- 0
+  }
+  if (municipalities[i,"Russian"]==TRUE){
+    municipalities[i,"Russian"] <- 1
+  }
+  else if (municipalities[i,"Russian"]==FALSE){
+    municipalities[i,"Russian"] <- 0
+  }  
+  if (municipalities[i,"Austrian"]==TRUE){
+    municipalities[i,"Austrian"] <- 1
+  }
+  else if (municipalities[i,"Austrian"]==FALSE){
+    municipalities[i,"Austrian"] <- 0
+  }
+}
+
+write.csv(municipalities, file = "municipalities_enhanced_2.csv")
+
+```
+
+Jakiś model
+```{r}
+mun3 <- municipalities %>% select(-municipality_code) %>%
+  select(-municipality_name) %>%
+  select(-county_code)
+model2 <- lm(formula = percent_vaccinated~., data = mun3)
+summary(model2)
 ```
 
