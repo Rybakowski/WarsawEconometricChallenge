@@ -48,7 +48,13 @@ data_master <- data_master_raw %>%
 	pivot_wider(names_from = type,
 					values_from = ones,
 					names_glue = "type_{type}") %>% 
-	select(-c(last_n, population_total, type_1, glosy_PIS, pop_t_30_39_perc))
+	select(-c(last_n, population_total, type_1, glosy_PIS, pop_t_30_39_perc, type_20_50k, 
+				 persons_running_business)) %>% 
+	replace_na(replace = list(type_agr = 0,
+									  type_0_20k = 0,
+									  type_50_100k = 0,
+									  type_100_500k = 0,
+									  `type_500k+` = 0)) 
 
 
 

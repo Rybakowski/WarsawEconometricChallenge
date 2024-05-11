@@ -1,6 +1,5 @@
 # rr_spatial_model
 
-# 
 
 ```{r}
 
@@ -55,6 +54,4 @@ cont_distance <- dnearneigh(centroids, 0.1, 50, row.names = dane.przestrzenne$ko
 
 ```
 
-\`\`\`{r} \# W_list \<- W_distance_list W_matrix \<- listw2mat(W_list)
 
-colnames(dane.przestrzenne)
