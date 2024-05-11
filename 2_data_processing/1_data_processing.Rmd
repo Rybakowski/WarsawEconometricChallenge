@@ -104,7 +104,9 @@ wybory_df
 ```{r}
 
 # colnames(data_gminy)
-data_population <- data_gminy %>% 
+data_population <- data_municipalities %>% 
+	mutate(teryt_gmina = str_remove(municipality_code, "(.{1})$")) %>%
+	mutate(teryt_gmina = as.integer(teryt_gmina)) %>% 
 	select(teryt_gmina, matches("population")) %>% 
 	pivot_longer(-teryt_gmina) %>% 
 	mutate(name = str_remove_all(name, "population_|total_")) %>% 
@@ -214,15 +216,14 @@ muni_exposure <- muni_exposure_raw %>%
 
 ```
 
-
-
 ## Final
 
 ```{r}
 
 mapping <- data_municipalities %>% 
-	distinct(municipality_code, county_code)
+	distinct(municipality_code, county_code, municipality_name)
 data_powiaty <- data_counties %>% 
+	left_join(mapping)
 	
 ```
 
@@ -237,20 +238,38 @@ data_gminy <- data_municipalities %>%
 	inner_join(data_population_sex, by = "teryt_gmina") %>% 
 	inner_join(bdl_new, by = c("teryt_gmina" = "kod")) %>% 
 	inner_join(muni_exposure, by = "municipality_code") %>% 
-	# inner_join(index_ineq_raw, by = "municipality_code")
+	inner_join(index_ineq_raw, by = "municipality_code")  %>% 
+	inner_join(data_powiaty) %>% 
+	group_by(county_code) %>% 
 	mutate(across(
-		.cols = c(healthcare_advices,forests_area,children_3_5_in_kindergartens),
+		.cols = c(healthcare_advices,forests_area,
+					 children_3_5_in_kindergartens, 
+					 high_exposure,
+					 tourits_per_1000_persons),
 		.fns = ~ifelse(is.na(.x), mean(.x, na.rm = TRUE), .x))) %>% 
-	select(!where(~any(is.na(.x)))) # wywalamy na
+	ungroup() %>% 
+	mutate(across(
+		.cols = c(healthcare_advices,forests_area,
+					 children_3_5_in_kindergartens, 
+					 high_exposure,
+					 tourits_per_1000_persons),
+		.fns = ~ifelse(is.na(.x), mean(.x, na.rm = TRUE), .x))) %>% 
+	select(!where(~any(is.na(.x)))) %>% 
+	select(-X) %>% 
+	mutate(population_total_log = log(population_total))# wywalamy na
 
 data_gminy %>%
-	select(where(~any(is.na(.x)))) %>% 
+	select(where(~any(is.na(.x)))) %>%
+	# filter(is.na(forests_area))
 	map(.f = ~sum(is.na(.x)))
+```
+```{r}
+
+dict_final <- tibble(colnames = colnames(data_gminy)) 
 ```
 
 ```{r}
-list_data <- list(municipalities = data_gminy,
-				 counties = data_counties)
+list_data <- list(municipalities = data_gminy)
 
 writexl::write_xlsx(list_data, "C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/data_master.xlsx")
 
