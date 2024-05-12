@@ -71,10 +71,14 @@ dane.przestrzenne$lat <- centroids[,2]
 ```{r}
 
 	
+eq <- urbanization_rate  ~
+	type_agr + 
+	type_0_20k + 
+	type_50_100k 
 
 
 eq <- percent_vaccinated ~
-	type_100_500k :(healthcare_advices + 
+	healthcare_advices + 
 	installations_watersupply + 
 	installations_toilet + 
 	installations_central_heating + 
@@ -130,7 +134,7 @@ eq <- percent_vaccinated ~
 	type_0_20k + 
 	type_50_100k  + 
 	lat +
-	long)
+	long
 
 # eq
 # colnames(dane.przestrzenne) %>%

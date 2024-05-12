@@ -15,21 +15,9 @@ colnames(data_master_raw)
 ```
 ```{r}
 data_master <- data_master_raw %>% 
-	select(c(colnames(data_master_kol), "unemployment_50", "unemployment_25", area_km2, population_total, population_total_log)) %>%  
-	# mutate(home_appliances =  (installations_toilet +
-	# 								  	installations_bathroom	+
-	# 								  	installations_central_heating +
-	# 								  	installations_network_gas +
-	# 								  	installations_watersupply)) %>%
 	mutate(rolny_revenue_ratio = (podatek_rolny/exp(population_total_log))/revenues_per_capita) %>% 
 	mutate(unemployment_25 = unemployment_25/exp(population_total_log)) %>% 
 	mutate(unemployment_50 = unemployment_50/exp(population_total_log)) %>% 
-	# select(-c(installations_toilet,installations_bathroom,
-	# 			 installations_central_heating,installations_network_gas, installations_watersupply)) %>% 
-	select(-c("unemployed_up_to_25", "unemployed_over_50" ,"unemployed_long_term")) %>% 
-	select(-c(podatek_rolny, appartment_area_per_person, unemployment_rate,
-				 population_per_pharmacy, revenues_per_capita, net_scholarization, 
-				 appartments_per_1000_persons, population_density)) %>% 
 	mutate(last_n = str_extract(municipality_code, ".$")) %>% 
 	mutate(type_1 = case_when(
 		last_n == 1 ~ "urban",
@@ -45,19 +33,15 @@ data_master <- data_master_raw %>%
 		.default = "500k+"
 	)) %>% 
 	mutate(ones =  1)  %>% 
+	mutate(type_2 = type) %>% 
 	pivot_wider(names_from = type,
 					values_from = ones,
 					names_glue = "type_{type}") %>% 
-	select(-c(last_n, population_total, type_1, glosy_PIS, pop_t_30_39_perc, type_20_50k, 
-				 persons_running_business, education_share_primary, installations_bathroom)) %>% 
 	replace_na(replace = list(type_agr = 0,
-									  type_0_20k = 0,
-									  type_50_100k = 0,
-									  type_100_500k = 0,
-									  `type_500k+` = 0)) 
-
-
-
+								  type_0_20k = 0,
+								  type_50_100k = 0,
+								  type_100_500k = 0,
+								  `type_500k+` = 0)) 
 ```
 
 ```{r}
@@ -85,7 +69,7 @@ dane.przestrzenne$lat <- centroids[,2]
 
 dane.przestrzenne <- dane.przestrzenne %>%  
 	as.data.frame() %>% 
-	select(-c(geometry, mncplty_s))
+	select(-c(geometry, mncplty_n))
 
 colnames(dane.przestrzenne)
 ```
@@ -96,6 +80,23 @@ colnames(dane.przestrzenne)
 new_dict <- tibble(variable_name = colnames(data_master_raw)) %>% 
 				full_join(tibble(variable_name = colnames(data_master), included = 1))
 
+dict_master <- readxl::read_xlsx(
+	r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\dict_master.xlsx)")
+
+filter <- dict_master %>% 
+	filter(is.na(included )) %>% 
+	select(new_label) %>% 
+	unlist() %>% 
+	unname()
+
+data_master_final  <- dane.przestrzenne %>%
+	select(-c(podatek_rolny, appartment_area_per_person, unemployment_rate,
+				 population_per_pharmacy, revenues_per_capita, net_scholarization, 
+				 appartments_per_1000_persons, population_density, 
+				 unemployed_up_to_25, unemployed_over_50 ,unemployed_long_term,
+				 last_n, population_total, type_1, type_2, glosy_PIS, pop_t_30_39_perc, type_20_50k, 
+				 persons_running_business, education_share_primary, installations_bathroom)) %>%
+	select(-tidyselect::any_of(filter)) 
 
 
 writexl::write_xlsx(new_dict, "new_dict.xlsx")
@@ -103,7 +104,9 @@ writexl::write_xlsx(new_dict, "new_dict.xlsx")
 glue::glue_collapse("\n")
 ```
 ```{r}
-writexl::write_xlsx(dane.przestrzenne,"C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/datamaster_final.xlsx")
+writexl::write_xlsx(data_master_final,"C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/datamaster_final.xlsx")
+
+writexl::write_xlsx(dane.przestrzenne,"C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/datamaster_final_full.xlsx")
 ```
 
 
