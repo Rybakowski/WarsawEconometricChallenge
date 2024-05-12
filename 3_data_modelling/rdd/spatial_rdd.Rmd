@@ -33,7 +33,7 @@ setwd(r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconomet
 map_partitions <- read_sf(".", "map_partitions") 
 map_partitions <- st_transform(map_partitions, "+proj=longlat")
 plot(map_partitions)
-common_border <- st_intersection(map_partitions$russian, map_partitions$prussian)
+# common_border <- st_intersection(map_partitions$russian, map_partitions$prussian)
 
 ```
 
