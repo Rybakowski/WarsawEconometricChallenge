@@ -1,0 +1,322 @@
+---
+title: "WEC_TM_3"
+author: "Tymoteusz Mętrak"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Libraries
+```{r}
+library(secr) # for point within the polygon
+library(tidyr)
+library(tidyverse)
+library(sf) # simple features -> do map
+library(dlookr) # do przyjemnej EDA
+library(ggplot2) # do wykresów
+library(ggthemes) # for elegant themes
+library(stringr) # do operacji na tekście
+library(openxlsx) # do otwierania excela
+library(lmtest) # do testów statystycznych
+library(car) # i.a. for vif test
+library(spatialreg) # for spatial regressions
+library(spdep) # for spatial objects
+library(spgwr) # for GWR estimation
+library(sandwich) # for robust standard errors
+```
+
+Reading the data
+```{r}
+getwd()
+dane <- read.xlsx("datamaster_final_end.xlsx")
+colnames(dane)[63] <- "type_500k"
+dane <- dane %>% 
+  select(-teryt_gmina) %>% 
+  select(-glosy_wazne)
+dane_old <- read.csv("data_municipalities.csv")
+```
+
+Other data reading
+```{r}
+counties <- read.csv("data_counties.csv")
+
+gminy <- read_sf("shapefiles_wec/map_municipalities.shp")
+colnames(gminy)[1] <- colnames(dane)[1]
+colnames(dane)[1]
+gminy$municipality_code <- as.numeric(gminy$municipality_code)
+
+gminy <-  left_join(gminy, dane, by = join_by(municipality_code))
+
+zabory <- read_sf("shapefiles_wec/map_partitions.shp")
+```
+
+
+Adjusting projections
+```{r}
+gminy <- st_transform(gminy, 4326)
+zabory <- st_transform(zabory, 4326)
+```
+
+The map
+```{r}
+ggplot(gminy) +
+  geom_sf(aes(fill=percent_vaccinated,col=percent_vaccinated)) +
+  geom_sf(data = zabory, fill = NA, col = "red")+
+  scale_fill_viridis_c()+
+  guides(fill=guide_legend(title = "Vaccination \nrate"),
+         color="none")+
+  labs(title = "Vaccination rate in Poland",
+       x="\n",
+       y="\n")+
+  theme_gdocs()
+```
+
+Weights matrix
+```{r}
+crds <- st_centroid(gminy)
+crds <- st_transform(crds, 2180)
+nbl = tri2nb(crds$geometry) #    
+cont.listw<-nb2listw(nbl, style="W")
+```
+first formula
+```{r}
+my_formula <- as.formula(                      # Create formula
+  paste("percent_vaccinated ~ ", paste(colnames(dane)[c(5:ncol(dane))], collapse = " + ")))
+my_formula
+```
+
+OLS
+```{r}
+model_OLS <- lm(formula = my_formula, 
+             weights = dane_old$population_total,
+             data = dane)
+summary(model_OLS)
+```
+
+```{r}
+my_formula2 <- as.formula("percent_vaccinated ~ area_km2 + urbanization_rate +
+                               healthcare_advices + installations_central_heating +
+                                 persons_per_appartment + persons_per_library +
+                               forests_area + 
+                                 bicycle_paths_per_10k_persons  +
+                               revenues_per_capita_PIT  +
+                                 revenues_per_capita_CIT +
+                               children_3_5_in_kindergartens + 
+                                 birthrate_per_1000_persons +
+                                 Prussian + 
+                                 Russian + 
+                                 frekwencja + 
+                                 glosy_KO+
+                                 glosy_KONF + 
+                                 glosy_PSL + 
+                                 glosy_SLD+
+                                 high_exposure +
+                                 index_ineq +
+                                 average_wage_relative +
+                                 doctors_per_1000_persons +
+                                 cars_per_1000_persons +
+                                 education_share_higher +
+                                 tourits_per_1000_persons+
+                                 rolny_revenue_ratio +
+                                 long+
+                                 lat")
+```
+
+OLS2
+```{r}
+model_OLS2 <- lm(formula = my_formula2, 
+             weights = dane_old$population_total,
+             data = dane)
+summary(model_OLS2)
+```
+
+```{r}
+vif(model_OLS2)
+```
+
+
+Breusch-Pagan test for heteroskedasity
+```{r}
+bptest(model_OLS2)
+```
+I reject the hypothesis, therefore run robust model
+
+
+
+OLS robust errors clustered for county
+```{r}
+vcov = vcovHC(model_OLS2, type="HC0", cluster=~county_code)
+rob <- coeftest(model_OLS2, vcov.=vcov)
+rob
+```
+
+
+```{r}
+my_formula3 <- as.formula("percent_vaccinated ~ area_km2  +
+                               healthcare_advices +
+                                 persons_per_appartment  +
+                               forests_area + 
+                                 bicycle_paths_per_10k_persons  +
+                                 revenues_per_capita_PIT  +
+                               children_3_5_in_kindergartens + 
+                                 birthrate_per_1000_persons +
+                                 Prussian + 
+                                 Russian + 
+                                 frekwencja + 
+                                 glosy_KO+
+                                 glosy_KONF + 
+                                 glosy_PSL + 
+                                 glosy_SLD+
+                                 high_exposure +
+                                 index_ineq +
+                                 average_wage_relative +
+                                 doctors_per_1000_persons +
+                                 cars_per_1000_persons +
+                                 education_share_higher +
+                                 tourits_per_1000_persons+
+                                 rolny_revenue_ratio +
+                                 long+
+                                 lat")
+```
+
+OLS3
+```{r}
+model_OLS3 <- lm(formula = my_formula3, 
+             weights = dane_old$population_total,
+             data = dane)
+
+vcov3 = vcovHC(model_OLS3, type="HC0", cluster=~county_code)
+rob3 <- coeftest(model_OLS3, vcov.=vcov3)
+rob3
+```
+
+And compare the models
+```{r}
+stargazer(model_OLS, rob, type="text")
+```
+
+
+```{r}
+crds <- st_centroid(gminy)
+crds <- st_transform(crds, 2180)
+
+nbl = tri2nb(crds$geometry) 
+cont.listw<-nb2listw(nbl, style="W")
+
+result_moran<-moran.test(dane$percent_vaccinated, cont.listw) 
+result_moran
+```
+The test states that there is a strong spatial dependence (p-value virtually 0). The Moran I statistic is very high and equal to 0.71. We will build spatial model then.
+
+
+SEM
+```{r}
+SEM<-errorsarlm(formula = my_formula3, data = dane,
+              listw=cont.listw)
+summary(SEM)
+```
+
+```{r}
+stargazer(model_OLS3, rob3,SEM, type="text")
+stargazer(model_OLS3, rob3, SEM,
+          model.names = F,
+          column.labels = c("OLS", "OLS with robust s.e.", "Spatial Error Model"),
+          column.sep.width = "1pt",
+          dep.var.labels = "Vaccinated population in municipality (%)",
+          title = "OLS estimates2",
+          type ="html",
+          out="OLS_estimates2.html")
+```
+
+
+```{r}
+SAR_TSLS <- stsls(formula = my_formula3, data = dane,
+                    listw=cont.listw)
+W <- as(cont.listw, "CsparseMatrix")
+trMatc <- trW(W, type="mult")
+loobj1 <- spatialreg::impacts(SAR_TSLS, R=2000, tr=trMatc)
+(sums <- summary(loobj1, zstats=TRUE, short=TRUE))
+```
+
+Do tabeli wyników
+```{r}
+STLS_df <- data.frame(sums$res)
+```
+
+Oszacowane, ale niewykorzystane - mam TSLS
+```{r}
+SAR <- lagsarlm (formula = my_formula3, data = dane,
+                 listw=cont.listw)
+stargazer(SAR, type="text")
+```
+
+
+```{r}
+Prussia <- dane[dane$Prussian==1,]
+Russia <- dane[dane$Russian==1,]
+Austria <- dane[dane$Prussian ==0 & dane$Russian==0,]
+
+dane_old2 <- data.frame(dane_old, dane$Prussian, dane$Russian)
+dane_old_Prussia <- dane_old2[dane_old2$dane.Prussian==1,]
+dane_old_Russia <- dane_old2[dane_old2$dane.Russian==1,]
+dane_old_Austria <- dane_old2[dane_old2$dane.Prussian==0 & dane_old2$dane.Russian==0,]
+```
+
+```{r}
+my_formula4 <- as.formula("percent_vaccinated ~ area_km2  +
+                               healthcare_advices +
+                                 persons_per_appartment  +
+                               forests_area + 
+                                 bicycle_paths_per_10k_persons  +
+                                 revenues_per_capita_PIT  +
+                               children_3_5_in_kindergartens + 
+                                 birthrate_per_1000_persons +
+                                 frekwencja + 
+                                 glosy_KO+
+                                 glosy_KONF + 
+                                 glosy_PSL + 
+                                 glosy_SLD+
+                                 high_exposure +
+                                 index_ineq +
+                                 average_wage_relative +
+                                 doctors_per_1000_persons +
+                                 cars_per_1000_persons +
+                                 education_share_higher +
+                                 tourits_per_1000_persons+
+                                 rolny_revenue_ratio +
+                                 long+
+                                 lat")
+```
+
+
+```{r}
+model_Prussia <- lm(formula = my_formula4, 
+             weights = dane_old_Prussia$population_total,
+             data = Prussia)
+
+vcov_Prussia = vcovHC(model_Prussia, type="HC0", cluster=~county_code)
+rob_Prussia <- coeftest(model_OLS3, vcov.=vcov_Prussia)
+
+model_Russia <- lm(formula = my_formula4, 
+             weights = dane_old_Russia$population_total,
+             data = Russia)
+
+vcov_Russia = vcovHC(model_Russia, type="HC0", cluster=~county_code)
+rob_Russia <- coeftest(model_OLS3, vcov.=vcov_Russia)
+
+model_Austria <- lm(formula = my_formula4, 
+             weights = dane_old_Austria$population_total,
+             data = Austria)
+
+vcov_Austria = vcovHC(model_Austria, type="HC0", cluster=~county_code)
+rob_Austria <- coeftest(model_OLS3, vcov.=vcov_Austria)
+
+stargazer(rob_Prussia, rob_Russia, rob_Austria, type="text")
+```
+
+
+
+
