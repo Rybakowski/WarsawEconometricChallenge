@@ -103,7 +103,7 @@ writexl::write_xlsx(new_dict, "new_dict.xlsx")
 glue::glue_collapse("\n")
 ```
 ```{r}
-writexl::write_xlsx(data_master,"C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/datamaster_final.xlsx")
+writexl::write_xlsx(dane.przestrzenne,"C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/datamaster_final.xlsx")
 ```
 
 
