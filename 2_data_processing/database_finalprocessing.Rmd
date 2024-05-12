@@ -41,7 +41,14 @@ data_master <- data_master_raw %>%
 								  type_0_20k = 0,
 								  type_50_100k = 0,
 								  type_100_500k = 0,
-								  `type_500k+` = 0)) 
+								  `type_500k+` = 0)) %>%
+	mutate(Russian_2 = Russian,
+			 Prussian_2 = Prussian,
+			 Austrian_2 = Austrian) %>% 
+	pivot_longer(c(Russian_2, Prussian_2, Austrian_2),
+				 names_to = "partitions") %>% 
+	filter(value == 1) %>% 
+	select(-value)
 ```
 
 ```{r}
@@ -95,13 +102,13 @@ data_master_final  <- dane.przestrzenne %>%
 				 appartments_per_1000_persons, population_density, 
 				 unemployed_up_to_25, unemployed_over_50 ,unemployed_long_term,
 				 last_n, population_total, type_1, type_2, glosy_PIS, pop_t_30_39_perc, type_20_50k, 
-				 persons_running_business, education_share_primary, installations_bathroom)) %>%
+				 persons_running_business, education_share_primary, installations_bathroom, partitions)) %>%
 	select(-tidyselect::any_of(filter)) 
 
 
 writexl::write_xlsx(new_dict, "new_dict.xlsx")
 
-glue::glue_collapse("\n")
+colnames(data_master_final)
 ```
 ```{r}
 writexl::write_xlsx(data_master_final,"C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/datamaster_final.xlsx")

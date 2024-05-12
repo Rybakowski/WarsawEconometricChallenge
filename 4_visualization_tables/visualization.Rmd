@@ -1,0 +1,49 @@
+
+# Visualization
+
+```{r}
+setwd("C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/4_visualization_tables")
+data_full_path <- r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\datamaster_final_full.xlsx)"
+data_path <- r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\datamaster_final.xlsx)"
+data <- readxl::read_xlsx(data_path)
+data_full <- readxl::read_xlsx(data_full_path)
+
+library(tidyverse)
+
+data %>% 
+	select(matches("pop")) %>% 
+	colnames()
+```
+
+```{r}
+
+table_type_mun <- data_full %>% 
+	select(population_total, type_2) %>% 
+	group_by(type_2) %>% 
+	summarize(n = n(),
+				 pop = sum(population_total)) %>% 
+	arrange(n) %>% 
+	ungroup() %>% 
+	mutate(pop_shr = pop/sum(pop))
+	
+	# pivot_wider(names_from = type_2,
+	# 				values_from = n,
+	# 				names_vary = "slowest")
+
+writexl::write_xlsx(table_type_mun, "type_2_mun.xlsx") 
+```
+
+
+```{r}
+table_type_mun <- data_full %>% 
+	select(population_total, type_2) %>% 
+	group_by(type_2) %>% 
+	summarize(n = n(),
+				 pop = sum(population_total)) %>% 
+	arrange(n) %>% 
+	ungroup() %>% 
+	mutate(pop_shr = pop/sum(pop))
+
+
+```
+
