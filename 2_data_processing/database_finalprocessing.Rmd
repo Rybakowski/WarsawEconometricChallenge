@@ -63,30 +63,44 @@ data_master <- data_master_raw %>%
 ```{r}
 colnames(data_master)
 ```
-
-
 ```{r}
 
-new_dict <- tibble(variable_name = colnames(data_master))
-colnames(data_master) %>%
-glue::glue_collapse("\n")
+
+library(sf)
+setwd(r"(C:\Users\rados\OneDrive - SGH\WarsawEconometricChallenge\WarsawEconometricChallenge\_data\shapefile)")
+map_municipalitties <- read_sf(".", "map_municipalities") %>% 
+	mutate(mncplty_c = as.numeric(mncplty_c))
+map_municipalitties<- st_transform(map_municipalitties, "+proj=longlat")
+
+
+dane.przestrzenne <- data_master %>% 
+	inner_join(map_municipalitties, by = c("municipality_code" = "mncplty_c")) 
+
+## long and lat
+centroids <- st_centroid(dane.przestrzenne$geometry) %>% 
+             unlist() %>%
+             matrix(nrow = nrow(dane.przestrzenne), ncol = 2, byrow = TRUE)
+dane.przestrzenne$long <- centroids[,1]
+dane.przestrzenne$lat <- centroids[,2]
+
+dane.przestrzenne <- dane.przestrzenne %>%  
+	as.data.frame() %>% 
+	select(-c(geometry, mncplty_s))
+
+colnames(dane.przestrzenne)
 ```
+
+
 ```{r}
-# data_master <- data_master %>%  
-# 	mutate(appartments_per_1000_persons = str_remove_all(appartments_per_1000_persons," ")) %>% 
-# 	mutate(appartments_per_1000_persons = as.numeric(appartments_per_1000_persons))
-# 	
-# 
-# data_master %>% select(where(is.character)) %>% 
-# 	mutate(munica)
-# 
-# 
-# data_master <- data_master %>% 
-# 	select(municipality_code) %>% 
-# 	mutate(last_n = substr(municipality_code[:7])
 
-# data_master
+new_dict <- tibble(variable_name = colnames(data_master_raw)) %>% 
+				full_join(tibble(variable_name = colnames(data_master), included = 1))
 
+
+
+writexl::write_xlsx(new_dict, "new_dict.xlsx")
+
+glue::glue_collapse("\n")
 ```
 ```{r}
 writexl::write_xlsx(data_master,"C:/Users/rados/OneDrive - SGH/WarsawEconometricChallenge/WarsawEconometricChallenge/datamaster_final.xlsx")

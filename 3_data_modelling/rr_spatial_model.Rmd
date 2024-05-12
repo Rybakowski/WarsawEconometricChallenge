@@ -7,6 +7,7 @@ library(sf)
 library(tidyverse)
 library(sp)
 library(spdep)
+library(spatialreg)
 ```
 
 ## Mapa
@@ -35,7 +36,8 @@ plot(map_municipalitties)
 
 ```{r}
 dane.przestrzenne <- data %>% 
-	inner_join(map_municipalitties, by = c("municipality_code" = "mncplty_c"))
+	inner_join(map_municipalitties, by = c("municipality_code" = "mncplty_c")) %>% 
+	mutate(kod = municipality_code)
 
 ```
 
@@ -51,6 +53,104 @@ N <- nrow(dane.przestrzenne)
 # Kryterium odległości
 centroids <- st_centroid(dane.przestrzenne$geometry)
 cont_distance <- dnearneigh(centroids, 0.1, 50, row.names = dane.przestrzenne$kod)
+W_distance_list <- nb2listw(cont_distance, style = "B")
+W_list <- W_distance_list
+W_matrix <- listw2mat(W_list)
+
+## long and lat
+centroids <- st_centroid(dane.przestrzenne$geometry) %>% 
+             unlist() %>%
+             matrix(nrow = nrow(dane.przestrzenne), ncol = 2, byrow = TRUE)
+dane.przestrzenne$long <- centroids[,1]
+dane.przestrzenne$lat <- centroids[,2]
+
+
+
+```
+
+```{r}
+
+	
+
+
+eq <- percent_vaccinated ~
+	type_100_500k :(healthcare_advices + 
+	installations_watersupply + 
+	installations_toilet + 
+	installations_central_heating + 
+	installations_network_gas + 
+	persons_per_appartment + 
+	persons_per_library + 
+	library_books_per_1000_persons + 
+	library_readers_per_1000_persons + 
+	library_loans_per_reader + 
+	forests_area + 
+	bicycle_paths_per_100km2 + 
+	bicycle_paths_per_10k_persons + 
+	revenues_per_capita_PIT + 
+	revenues_per_capita_CIT + 
+	investment_expenditures_per_capita + 
+	children_3_5_in_kindergartens + 
+	marriages_per_1000_persons + 
+	birthrate_per_1000_persons + 
+	net_migrations_per_1000_persons + 
+	entities_registered_per_10k_persons + 
+	Prussian + 
+	Russian + 
+	frekwencja + 
+	glosy_niewazne + 
+	glosy_KO + 
+	glosy_KONF + 
+	glosy_PSL + 
+	glosy_SLD + 
+	pop_t_0_19_perc + 
+	pop_t_40_49_perc + 
+	pop_t_20_29_perc + 
+	pop_t_50_59_perc + 
+	pop_t_60_84_perc + 
+	pop_f_all_perc + 
+	avg_gosp_wiejskie + 
+	high_exposure + 
+	index_ineq + 
+	average_wage_relative + 
+	doctors_per_1000_persons + 
+	beds_in_hospitals + 
+	cars_per_1000_persons + 
+	motorcycles_per_1000_persons + 
+	education_share_higher + 
+	education_share_secondary + 
+	education_share_vocational + 
+	tourits_per_1000_persons + 
+	population_total_log + 
+	unemployment_50 + 
+	unemployment_25 + 
+	area_km2 + 
+	rolny_revenue_ratio + 
+	type_agr + 
+	type_0_20k + 
+	type_50_100k  + 
+	lat +
+	long)
+
+# eq
+# colnames(dane.przestrzenne) %>%
+# 	glue::glue_collapse(" + \n")
+
+```
+
+```{r}
+
+
+model1 <- lm(eq, data = dane.przestrzenne)
+summary(model1)
+
+car::vif(model1)
+model8a <- lagsarlm(eq, data = dane.przestrzenne, listw = W_list, type = "sacmixed")
+summary(model8a)
+res8a <- model8a$residuals
+
+??spdep
+moran.test(res8a, listw = W_list)
 
 ```
 
